@@ -30,11 +30,11 @@ randomfloodfill :: (DomBuilder t m, MonadReflexCreateTrigger t m, PostBuild t m,
     Ref (Performable m) ~ IORef) =>  m ()
 randomfloodfill = divClass "canvas_container" $ do
   (width'', height'') <- screenSize
-  let (w', h') = (width'' - 20, height'' - 20)
+  let (w', h') = (width'' - (width'' `floorDiv` 3) , height'' - (height'' `floorDiv` 2))
   let (canvasWidth, canvasHeight) = (alignToPixels w', alignToPixels h')
   let randomNum = randomIO :: IO Integer
 
-  c <- liftIO $ coordsToVisit canvasWidth canvasHeight randomNum
+  c <- liftIO $ coordsToVisit (canvasWidth + 1) (canvasHeight + 1) randomNum
 
   evTick <- RD.tickLossy 0.01 =<< liftIO getCurrentTime
   -- evTick <- RD.tickLossy 1 =<< liftIO getCurrentTime
@@ -45,7 +45,7 @@ randomfloodfill = divClass "canvas_container" $ do
   let dyState = (getState w' canvasWidth h' canvasHeight) <$> dyToDraw
 
   dCx <- createBlankCanvas $
-          ("style" =: "image-rendering: pixelated; background-color: white;") <>
+          ("style" =: "image-rendering: pixelated;") <>
           (canvasAttrs w' h')
 
   let renderer = (\state cx _ -> render state cx) <$> dyState

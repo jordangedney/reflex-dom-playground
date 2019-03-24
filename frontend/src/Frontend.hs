@@ -29,7 +29,7 @@ frontend = Frontend
 
 nothing :: DomBuilder t m => m ()
 nothing = do
-  el "hello" blank
+  divClass "canvas_container" blank
 
 -- | The @<main>@ tag that will contain most of the site's content
 mainContainer :: DomBuilder t m => m () -> m (Event t ())

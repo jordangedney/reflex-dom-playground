@@ -1,54 +1,29 @@
 /* General */
 html {
   height: 100%;
-  overflow: hidden;
 }
+
 body {
-  height: 100%;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   flex-direction: column;
-  color: white;
-  /* color: var(--primary); */
   background-color: #3c3c3c;
-  /* # background-color: var(--background); */
-  overflow: hidden;
-  font-family: "Montserrat", sans-serif;
 }
 
 /* Main content area */
 main {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  justify-content: space-between;
-  padding: var(--padding);
-  align-items: center;
+    padding-bottom: 15%;
 }
 
 canvas {
-    padding-left: 0;
-    padding-right: 0;
-    margin-left: auto;
-    margin-right: auto;
     display: block;
-    width: 80%;
-    height: 80%;
 }
 
-#canvas_container {
+.canvas_container {
     background: #fff;
-    border: 1px solid #aaa;
-    border-radius: 15px;
-    /* height: 515px; */
-    margin: 20px 20px;
+    border-radius: 10px;
     overflow: hidden;
-    /* width: 690px; */
-    /* -webkit-mask-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAA5JREFUeNpiYGBgAAgwAAAEAAGbA+oJAAAAAElFTkSuQmCC); /* this fixes the overflow:hidden in Chrome/Opera */
-}
-
-#canvas {
-    height: 515px;
-    width: 690px;
+    box-shadow: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
 }
