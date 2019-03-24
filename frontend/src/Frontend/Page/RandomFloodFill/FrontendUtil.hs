@@ -6,20 +6,21 @@ module Frontend.Page.RandomFloodFill.FrontendUtil where
 import JSDOM (currentWindowUnchecked)
 import JSDOM.Generated.Window (getInnerWidth, getInnerHeight)
 
-import JSDOM.Types (liftDOM, Uint8ClampedArray(..), RenderingContext(..))
-import JSDOM.Types (MonadJSM, CanvasRenderingContext2D, JSM, Uint8ClampedArray, liftDOM)
+import Reflex.Host.Class
+import Control.Monad.Ref
+import Control.Monad.Fix
+import GHC.IORef
+
+import JSDOM.Types (
+  Uint8ClampedArray(..),
+  MonadJSM, JSM, Uint8ClampedArray, liftDOM, CanvasRenderingContext2D)
+
 import qualified Reflex.Dom.CanvasDyn as CDyn
 import qualified Reflex.Dom.CanvasBuilder.Types as CBT
 import qualified Data.Text as T
 import qualified Data.Map as Map
-import Obelisk.Frontend (ObeliskWidget)
 import Reflex.Dom
-import Control.Monad.Ref
-import Control.Monad.Fix
-import GHC.IORef
-import Reflex.Host.Class
 import qualified Reflex.Dom.Core as RD
-import Frontend.Page.RandomFloodFill.App
 import qualified Data.ByteString.Base64 as B64 (encode)
 import GHCJS.Buffer (getArrayBuffer, MutableBuffer)
 import Data.Word
@@ -27,9 +28,7 @@ import JSDOM.ImageData
 import qualified GHCJS.DOM                      as JSDOM
 import qualified Data.ByteString as BS
 import GHCJS.Buffer.Types (SomeBuffer(..))
-import Language.Javascript.JSaddle (js, js1, jss, jsg, jsg1,
-                                    new, pToJSVal, GHCJSPure(..), ghcjsPure, JSM,
-                                    fromJSVal, toJSVal, Object, liftJSM)
+import Language.Javascript.JSaddle (jsg, jsg1, new, pToJSVal, ghcjsPure, liftJSM)
 import Data.Text.Encoding (decodeUtf8)
 
 canvasAttrs :: Integer -> Integer -> Map.Map T.Text T.Text
@@ -38,6 +37,19 @@ canvasAttrs width height =
   ("height" =: (T.pack . show $ height)) <>
   ("style" =: "background-color: white")
 
+createBlankCanvas
+  :: (DomBuilder t m,
+      Reflex.Host.Class.MonadReflexCreateTrigger t m, PostBuild t m,
+      PerformEvent t m, MonadJSM m, MonadJSM (Performable m),
+      TriggerEvent t m, HasJSContext m, HasJSContext (Performable m),
+      HasDocument m, Control.Monad.Ref.MonadRef m,
+      Control.Monad.Ref.MonadRef (Performable m), MonadHold t m,
+      Control.Monad.Fix.MonadFix m, MonadSample t (Performable m),
+      DomBuilderSpace m ~ GhcjsDomSpace,
+      Control.Monad.Ref.Ref m ~ GHC.IORef.IORef,
+      Control.Monad.Ref.Ref (Performable m) ~ GHC.IORef.IORef) =>
+    Map.Map T.Text T.Text
+  -> m (Dynamic t JSDOM.Types.CanvasRenderingContext2D)
 createBlankCanvas attrs = do
   (innerEle, _) <- elAttr' "canvas" attrs blank
 
@@ -47,7 +59,7 @@ createBlankCanvas attrs = do
   dCx <- (fmap . fmap) CBT._canvasInfo_context innerCanvasInfo
   return dCx
 
-screenSize :: (MonadJSM m, DomBuilder t m) =>  m (Integer, Integer)
+screenSize :: (MonadJSM m) =>  m (Integer, Integer)
 screenSize = do
   w <- currentWindowUnchecked
   width <- getInnerWidth w
@@ -67,20 +79,17 @@ makeImageData' width height dat
   = do dat' <-  (uint8ClampedArrayFromByteString (BS.pack dat))
        newImageData dat' (fromIntegral width) (Just (fromIntegral height))
 
+makeImageData :: MonadJSM m => Integer -> Integer -> [Word8] -> m ImageData
 makeImageData x y z = do
   x' <- liftJSM $ makeImageData' x y z
   return x'
 
--- | Run functions using the raw canvas context object. This will be either a
--- Context2D or ContextWebGL depending on which type you initialised.
 drawWithCx
-  :: ( MonadWidget t m
-     , CBT.HasRenderFn c ( CBT.RenderContext c )
-     )
-  => Dynamic t ( CBT.RenderContext c )
-  -> Dynamic t ( CBT.RenderContext c -> Double -> JSM a )
-  -> Event t ()
-  -> m ( Event t a )
+  :: (PerformEvent t1 m, MonadJSM (Performable m))
+  => Dynamic t1 t2
+  -> Dynamic t1 (t2 -> Double -> JSM a1)
+  -> Event t1 a2
+  -> m (Event t1 a1)
 drawWithCx dContext dAction eApply =
   let
     nextFrame cx f = liftJSM $

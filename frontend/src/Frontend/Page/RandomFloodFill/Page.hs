@@ -34,16 +34,15 @@ randomfloodfill = divClass "canvas_container" $ do
   let (canvasWidth, canvasHeight) = (alignToPixels w', alignToPixels h')
   let randomNum = randomIO :: IO Integer
 
-  evStart <- RD.getPostBuild
   c <- liftIO $ coordsToVisit canvasWidth canvasHeight randomNum
-  let pixelsToDraw = c <$ evStart
 
   evTick <- RD.tickLossy 0.01 =<< liftIO getCurrentTime
   -- evTick <- RD.tickLossy 1 =<< liftIO getCurrentTime
   dyGameTick <- RD.count evTick
 
   let dyToDraw = (\tick -> ((tick :: Integer), [c !! (fromIntegral tick)])) <$> dyGameTick
-  let dyState = RD.traceDyn "" $ (getState w' canvasWidth h' canvasHeight) <$> dyToDraw
+  -- let dyState = RD.traceDyn "" $ (getState w' canvasWidth h' canvasHeight) <$> dyToDraw
+  let dyState = (getState w' canvasWidth h' canvasHeight) <$> dyToDraw
 
   dCx <- createBlankCanvas $
           ("style" =: "image-rendering: pixelated; background-color: white;") <>
@@ -55,11 +54,11 @@ randomfloodfill = divClass "canvas_container" $ do
   pure ()
 
 render :: MonadJSM m => State -> CanvasRenderingContext2D -> m ()
-render (State sW w sH h [] t) cx = do pure ()
-render state@(State _ w _ h (p:pixels) t) cx = do
+render (State _ _ _ _ [] _) _ = do pure ()
+render state@(State _ _ _ _ (p:pixels) _) cx = do
   let ((x, y), pix) = p
   drawPixel cx pix (x * pixelSize) (y * pixelSize)
-  render state { toDraw = pixels } cx
+  render state { pixelsToDraw = pixels } cx
 
 drawPixel :: MonadJSM m => CanvasRenderingContext2D -> Pixel -> Integer -> Integer ->  m ()
 drawPixel cx pixel xPos yPos = do

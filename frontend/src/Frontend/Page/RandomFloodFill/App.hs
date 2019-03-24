@@ -3,8 +3,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Frontend.Page.RandomFloodFill.App where
 
-import qualified Data.Text as T
-import qualified Data.Map as Map
 import Control.Monad.Trans (liftIO)
 import Data.Word
 
@@ -33,7 +31,7 @@ getState
      -> Integer
      -> (Integer, [(Integer, Integer)])
      -> State
-getState sw w sH h (gameTick, toDraw) = State sw w sH h coords gameTick
+getState sw w sH h (gTick, toDraw) = State sw w sH h coords gTick
   where coords = zip toDraw $ repeat blackPixel
 
 data State = State
@@ -41,7 +39,7 @@ data State = State
   , width :: Integer
   , screenHeight :: Integer
   , height :: Integer
-  , toDraw :: [((Integer, Integer), Pixel)]
+  , pixelsToDraw :: [((Integer, Integer), Pixel)]
   , gameTick :: Integer
   } deriving (Show, Eq, Ord)
 
@@ -50,8 +48,8 @@ inBounds (x, y) w h = and [x >= 0, x <= w, y >= 0, y <= h]
 
 type Coord = (Integer, Integer)
 
-
 toVisit :: (Coord -> Bool) -> [Coord] -> [Coord] -> [Integer] -> [Coord]
+toVisit _ _ _ [] = []
 toVisit inbounds visited frontier (r:randomIndexes) = toVisit'
   where (nextNode, frontierWithout) = popRandomNode r frontier
         nextNeighbors = filter (\x -> inbounds x && unseenNode x) $ neighbors nextNode
@@ -78,13 +76,11 @@ startingCoords maxWidth maxHeight rnd = do
   where bound num = num - (num `floorDiv` 4)
         bW = maxWidth `floorDiv` 8
         bH = maxWidth `floorDiv` 8
-        mW = bound maxWidth
-        mH = bound maxHeight
 
 coordsToVisit :: Integer -> Integer -> IO Integer -> IO [(Integer, Integer)]
 coordsToVisit maxWidth maxHeight rnd = do
   (x, y) <- liftIO $ startingCoords maxWidth maxHeight rnd
-  let rest = toVisit (\x -> inBounds x maxWidth maxHeight) [] [(x,y)] [1..]
+  let rest = toVisit (\x' -> inBounds x' maxWidth maxHeight) [] [(x,y)] [1..]
   pure $ [(x, y)] ++ takeWhile (\coord -> inBounds coord maxWidth maxHeight) rest
 
 
@@ -92,7 +88,6 @@ removeIndex :: Int -> [a] -> [a]
 removeIndex ind xs = (take (ind - 1) xs) ++ (drop ind xs)
 
 popRandomNode :: Integer -> [a] -> (a, [a])
-popRandomNode rnd (x:[]) = (x, [])
-popRandomNode rnd xs = ((xs !! removed'), removeIndex removed' xs)
-  where removed' = ((fromIntegral rnd) + 1) `mod` (length xs)
-        removed = if removed == 0 then 0 else removed' - 1
+popRandomNode _ (x:[]) = (x, [])
+popRandomNode rnd xs = ((xs !! removed), removeIndex removed xs)
+  where removed = ((fromIntegral rnd) + 1) `mod` (length xs)
