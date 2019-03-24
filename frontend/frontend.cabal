@@ -12,8 +12,13 @@ library
                , reflex-dom
                , obelisk-generated-static
                , text
+               , reflex-dom
+               , reflex-dom-canvas
+               , base64-bytestring
   exposed-modules:
     Frontend
+    Frontend.Head
+    Frontend.Page.RandomFloodFill
   ghc-options: -Wall
 
 executable frontend
